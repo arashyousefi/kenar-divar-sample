@@ -1,0 +1,4 @@
+pip-tools==7.4.1
+Django==5.1
+python-decouple==3.8
+

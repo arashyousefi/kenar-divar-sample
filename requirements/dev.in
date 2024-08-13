@@ -1,0 +1,2 @@
+-r base.in
+black==24.8.0
