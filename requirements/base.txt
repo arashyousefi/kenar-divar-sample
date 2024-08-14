@@ -11,6 +11,10 @@ build==1.2.1
 click==8.1.7
     # via pip-tools
 django==5.1
+    # via
+    #   -r requirements/base.in
+    #   django-extensions
+django-extensions==3.2.3
     # via -r requirements/base.in
 packaging==24.1
     # via build

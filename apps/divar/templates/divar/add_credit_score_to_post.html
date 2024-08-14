@@ -1,0 +1,10 @@
+{% extends "divar/base.html" %}
+
+{% block content %}
+<p>Your score: {{ score }}</p>
+    <form method="post">
+    {% csrf_token %}
+    {{ form }}
+    <button>Submit</button>
+    </form>
+{% endblock %}

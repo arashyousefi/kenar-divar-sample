@@ -15,6 +15,10 @@ click==8.1.7
     #   black
     #   pip-tools
 django==5.1
+    # via
+    #   -r requirements/base.in
+    #   django-extensions
+django-extensions==3.2.3
     # via -r requirements/base.in
 mypy-extensions==1.0.0
     # via black

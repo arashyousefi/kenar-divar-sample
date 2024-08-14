@@ -27,7 +27,7 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
-
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv())
 
 # Application definition
 
@@ -38,6 +38,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # third-party
+    "django_extensions",
+    # project
+    "apps.divar.apps.DivarConfig",
+    "apps.users.apps.UsersConfig",
+    "apps.logic.apps.LogicConfig",
 ]
 
 MIDDLEWARE = [
@@ -122,3 +128,11 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "users.User"
+
+DIVAR_BASE_URL = config("DIVAR_BASE_URL")
+DIVAR_API_KEY = config("DIVAR_API_KEY")
+DIVAR_CLIENT_ID = config("DIVAR_CLIENT_ID")
+DIVAR_CLIENT_SECRET = config("DIVAR_CLIENT_SECRET")
+DIVAR_REDIRECT_URL = config("DIVAR_REDIRECT_URL") # TODO

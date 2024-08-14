@@ -16,8 +16,17 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.contrib.auth.views import LoginView, LogoutView
+from django.urls import path, include
+
+from apps import divar
+from apps.divar.views import HomePageView
+from apps.users.views import CustomLoginView, CustomLogoutView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("login/", CustomLoginView.as_view(), name="login"),
+    path("logout/", CustomLogoutView.as_view(), name="logout"),
+    path("divar/", include("apps.divar.urls", namespace="divar")),
+    path("", HomePageView.as_view(), name="home"),
 ]
