@@ -1,3 +1,4 @@
+from typing import List
 from urllib.parse import quote_plus
 
 import requests
@@ -12,19 +13,23 @@ class DivarClient:
         "&scope={scopes}"
         "&state={state}"
     )
-    SCOPES = "USER_POSTS_GET USER_POSTS_GET USER_ADDON_CREATE POST_ADDON_CREATE.gZ7ei6pD"
+    SCOPES = "USER_POSTS_GET USER_POSTS_GET USER_ADDON_CREATE"
 
     def __init__(self):
         pass
 
     def generate_redirect_url(
-            self, state: str
+            self, state: str, dynamic_scopes: List[str] = None
     ):
+        scopes = self.SCOPES
+        if dynamic_scopes:
+            scopes += " " + " ".join(dynamic_scopes)
+
         path = self.OAUTH_REDIRECT_URL_TEMPLATE.format(
             client_id=settings.DIVAR_CLIENT_ID,
             client_secret=settings.DIVAR_CLIENT_SECRET,
             redirect_uri=quote_plus(settings.DIVAR_REDIRECT_URL),
-            scopes=quote_plus(self.SCOPES),
+            scopes=quote_plus(scopes),
             state=state,
         )
         return f"{settings.DIVAR_BASE_URL}{path}"
@@ -68,12 +73,12 @@ class DivarClient:
                                 "icon_color": "SUCCESS_PRIMARY"
                             },
                             # "action": {
-                                # "type": "LOAD_WEB_VIEW_PAGE",
-                                # "fallback_link": "https://google.com/",
-                                # "payload": {
-                                #     "@type": "type.googleapis.com/widgets.LoadWebViewPagePayload",
-                                #     "url": "https://google.com/"
-                                # }
+                            # "type": "LOAD_WEB_VIEW_PAGE",
+                            # "fallback_link": "https://google.com/",
+                            # "payload": {
+                            #     "@type": "type.googleapis.com/widgets.LoadWebViewPagePayload",
+                            #     "url": "https://google.com/"
+                            # }
                             # }
                         }
                     }
@@ -148,6 +153,47 @@ class DivarClient:
             # "semantic_sensitives": ["national_id"]
         }
 
+        response = requests.post(url, headers=headers, json=data, timeout=5)
+        if response.status_code != 200:
+            ok = False
+        else:
+            ok = True
+        return ok, response.json()
+
+    def request_send_message_in_chat(self, auth_data, chat, message: str):
+        url = f"{settings.DIVAR_BASE_URL}/v2/open-platform/chat/conversation"
+        headers = {
+            "x-api-key": settings.DIVAR_API_KEY,
+            "x-access-token": auth_data.access_token,
+        }
+        data = {
+            "user_id": chat.user_id,
+            "post_token": chat.post_token,
+            "peer_id": chat.peer_id,
+            "type": "TEXT",
+            "message": message,
+            # "sender_btn": {
+            #     "action": "LINK",
+            #     "data": {
+            #         "icon_name": "نام آیکون مورد نظر برای این دکمه",
+            #         "extra_data": {
+            #             "your_custom_key": "اطلاعاتی که در ادامه هنگام کلیک روی دکمه نیاز داریم"
+            #         },
+            #         "caption": "متن دکمهٔ زیر پیام برای طرف فرستنده"
+            #     }
+            # },
+            # "receiver_btn": {
+            #     "action": "LINK",
+            #     "data": {
+            #         "icon_name": "نام آیکون مورد نظر برای این دکمه",
+            #         "extra_data": {
+            #             "your_custom_key": "اطلاعاتی که در ادامه هنگام کلیک روی دکمه نیاز داریم"
+            #         },
+            #         "caption": "متن دکمهٔ زیر پیام برای طرف گیرنده"
+            #     }
+            # }
+        }
+        print(headers)
         response = requests.post(url, headers=headers, json=data, timeout=5)
         if response.status_code != 200:
             ok = False

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+Hello {{ chat.user_id }}
+
+{% for message in chat.messages.all %}
+    <p> {{ message.message_text }} </p>
+{% empty %}
+    <p> No message just yet.</p>
+{% endfor %}
+<a href="{% url 'divar:send-random-message'  chat.uuid%}"><button> Send random message</button> </a>
+
+</body>
+</html>

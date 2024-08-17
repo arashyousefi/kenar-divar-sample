@@ -1,15 +1,23 @@
+import random
+import string
 import uuid
-from sqlite3 import connect
+from base64 import b64encode
 
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.views.generic import TemplateView, RedirectView, FormView
+from django.views.generic import TemplateView, RedirectView, FormView, DetailView
+from rest_framework import exceptions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.divar.client import DivarClient
 from apps.divar.forms import AddCreditScoreForm
-from apps.divar.models import TempAuthorizationData
+from apps.divar.models import TempAuthorizationData, Chat, ChatMessage
+from apps.divar.serializers import InitSessionFromChatSerializer
 from apps.logic.models import CreditScore
 
 
@@ -122,3 +130,72 @@ class AddCreditScoreToPostView(LoginRequiredMixin, FormView):
         print(ok, response)
         messages.success(self.request, "Your credit score has been added.")
         return HttpResponseRedirect(reverse("divar:actions"))
+
+
+class ChatInitSessionView(APIView):
+    def post(self, request, *args, **kwargs):
+        auth_token = self.request.headers['Authorization']
+        if auth_token != settings.DIVAR_IDENTIFICATION_KEY:
+            raise exceptions.AuthenticationFailed()
+        data = request.data
+        print(data)
+        serializer = InitSessionFromChatSerializer(data=data)
+        if not serializer.is_valid():
+            print(serializer.errors)
+            raise exceptions.ValidationError(serializer.errors)
+        latitude = serializer.validated_data.get("location", {}).get("latitude", None)
+        longitude = serializer.validated_data.get("location", {}).get("longitude", None)
+        chat = Chat.objects.create(
+            latitude=latitude,
+            longitude=longitude,
+            callback_url=serializer.validated_data.get("callback_url", None),
+            post_token=serializer.validated_data.get("post_token"),
+            user_id=serializer.validated_data.get("user_id", None),
+            peer_id=serializer.validated_data.get("peer_id", None),
+            supplier_id=serializer.validated_data.get("supplier", {}).get("id", None),
+            demand_id=serializer.validated_data.get("demand", {}).get("id", None),
+        )
+        response = {
+            "status": "200",
+            "message": "success",
+            "url": settings.SITE_URL + reverse("divar:chat-landing", args=[chat.uuid]),
+        }
+        print(response)
+        return Response(data=response, status=status.HTTP_200_OK)
+
+
+class ChatLandingView(DetailView):
+    template_name = "divar/chat_landing.html"
+    context_object_name = "chat"
+
+    def get_queryset(self):
+        return Chat.objects.all()
+
+    def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        return get_object_or_404(queryset, uuid=self.kwargs['uuid'])
+
+
+class SendRandomMessageView(TemplateView):
+    def get(self, request, *args, **kwargs):
+        chat = get_object_or_404(Chat, uuid=self.kwargs['chat_uuid'])
+        client = DivarClient()
+        scope_identifier = f"{chat.user_id}:{chat.post_token}:{chat.peer_id}"
+        scope = f"CHAT_MESSAGE_SEND.{b64encode(scope_identifier.encode()).decode()}"
+        if not (auth_data := TempAuthorizationData.objects.filter(user_uuid=chat.user_id, scope__contains=scope,
+                                                                  access_token__isnull=False).first()):
+            auth_data = TempAuthorizationData.objects.create(user_uuid=chat.user_id)
+            print(scope)
+            return HttpResponseRedirect(client.generate_redirect_url(auth_data.state, dynamic_scopes=[scope]))
+
+        print(auth_data, auth_data.scope, auth_data.access_token)
+        message = "".join(random.choices(string.ascii_letters + string.digits, k=100))
+        ok, response = client.request_send_message_in_chat(auth_data, chat, message)
+        print(ok, response)
+        if ok:
+            ChatMessage.objects.create(
+                chat=chat,
+                message_text=message,
+            )
+        return HttpResponseRedirect(reverse("divar:chat-landing", args=[chat.uuid]))

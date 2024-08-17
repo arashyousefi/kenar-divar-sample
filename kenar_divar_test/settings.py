@@ -26,6 +26,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", default=False, cast=bool)
 
+SITE_URL = config("SITE_URL")
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv())
 
@@ -136,3 +137,4 @@ DIVAR_API_KEY = config("DIVAR_API_KEY")
 DIVAR_CLIENT_ID = config("DIVAR_CLIENT_ID")
 DIVAR_CLIENT_SECRET = config("DIVAR_CLIENT_SECRET")
 DIVAR_REDIRECT_URL = config("DIVAR_REDIRECT_URL") # TODO
+DIVAR_IDENTIFICATION_KEY = config("DIVAR_IDENTIFICATION_KEY")
