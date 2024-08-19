@@ -10,6 +10,10 @@ black==24.8.0
     # via -r requirements/dev.in
 build==1.2.1
     # via pip-tools
+certifi==2024.7.4
+    # via requests
+charset-normalizer==3.3.2
+    # via requests
 click==8.1.7
     # via
     #   black
@@ -18,8 +22,13 @@ django==5.1
     # via
     #   -r requirements/base.in
     #   django-extensions
+    #   djangorestframework
 django-extensions==3.2.3
     # via -r requirements/base.in
+djangorestframework==3.15.2
+    # via -r requirements/base.in
+idna==3.7
+    # via requests
 mypy-extensions==1.0.0
     # via black
 packaging==24.1
@@ -38,8 +47,12 @@ pyproject-hooks==1.1.0
     #   pip-tools
 python-decouple==3.8
     # via -r requirements/base.in
+requests==2.32.3
+    # via -r requirements/base.in
 sqlparse==0.5.1
     # via django
+urllib3==2.2.2
+    # via requests
 wheel==0.44.0
     # via pip-tools
 
