@@ -3,6 +3,7 @@ from urllib.parse import quote_plus
 
 import requests
 from django.conf import settings
+from django.urls import reverse
 
 
 class DivarClient:
@@ -13,7 +14,7 @@ class DivarClient:
         "&scope={scopes}"
         "&state={state}"
     )
-    SCOPES = "USER_POSTS_GET USER_POSTS_GET USER_ADDON_CREATE"
+    SCOPES = "USER_POSTS_GET USER_POSTS_GET USER_ADDON_CREATE USER_POSTS_ADDON_CREATE"
 
     def __init__(self):
         pass
@@ -166,34 +167,38 @@ class DivarClient:
             "x-api-key": settings.DIVAR_API_KEY,
             "x-access-token": auth_data.access_token,
         }
+        demand_button = {
+            "action": "DIRECT_LINK",
+            "data": {
+                "icon_name": "نام آیکون مورد نظر برای این دکمه",
+                "direct_link": settings.SITE_URL + reverse("logic:new-rating", args=[chat.supplier_id]),
+                "caption": "امتیازدهی به آگهی گذار",
+            }
+        }
+        supplier_button = {
+            "action": "DIRECT_LINK",
+            "data": {
+                "icon_name": "نام آیکون مورد نظر برای این دکمه",
+                "direct_link": settings.SITE_URL + reverse("logic:new-rating", args=[chat.demand_id]),
+                "caption": "امتیازدهی به خریدار",
+            }
+        }
+        if chat.user_id == chat.supplier_id:
+            sender_button = supplier_button
+            receiver_button = demand_button
+        else:
+            sender_button = demand_button
+            receiver_button = supplier_button
+
         data = {
             "user_id": chat.user_id,
             "post_token": chat.post_token,
             "peer_id": chat.peer_id,
             "type": "TEXT",
             "message": message,
-            # "sender_btn": {
-            #     "action": "LINK",
-            #     "data": {
-            #         "icon_name": "نام آیکون مورد نظر برای این دکمه",
-            #         "extra_data": {
-            #             "your_custom_key": "اطلاعاتی که در ادامه هنگام کلیک روی دکمه نیاز داریم"
-            #         },
-            #         "caption": "متن دکمهٔ زیر پیام برای طرف فرستنده"
-            #     }
-            # },
-            # "receiver_btn": {
-            #     "action": "LINK",
-            #     "data": {
-            #         "icon_name": "نام آیکون مورد نظر برای این دکمه",
-            #         "extra_data": {
-            #             "your_custom_key": "اطلاعاتی که در ادامه هنگام کلیک روی دکمه نیاز داریم"
-            #         },
-            #         "caption": "متن دکمهٔ زیر پیام برای طرف گیرنده"
-            #     }
-            # }
+            "sender_btn": sender_button,
+            "receiver_btn": receiver_button,
         }
-        print(headers)
         response = requests.post(url, headers=headers, json=data, timeout=5)
         if response.status_code != 200:
             ok = False

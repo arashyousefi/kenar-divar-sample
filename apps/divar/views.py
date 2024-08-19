@@ -46,7 +46,6 @@ class RedirectFromDivarView(TemplateView):
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         params = request.GET
-        print(params)
         context["params"] = params
 
         code = params.get('code', None)
@@ -61,7 +60,6 @@ class RedirectFromDivarView(TemplateView):
             return self.render_to_response(context)
         client = DivarClient()
         ok, res = client.request_get_access_token(code)
-        print(ok, res)
         if not ok:
             context["result"] = "Invalid response from Divar" + str(res)
             return self.render_to_response(context)
@@ -121,13 +119,16 @@ class AddCreditScoreToPostView(LoginRequiredMixin, FormView):
 
         user = self.request.user
         score, created = CreditScore.objects.get_or_create(user=user)
-        auth_data = TempAuthorizationData.objects.filter(user=user).first()
-        if auth_data is None:
-            print("No auth data found")
-            return
+
+        required_scope = f"POST_ADDON_CREATE.{post_token}"
         client = DivarClient()
+
+        auth_data = TempAuthorizationData.objects.filter(user=user, scope__contains=required_scope).first()
+        if auth_data is None:
+            auth_data = TempAuthorizationData.objects.create(user=user)
+            return HttpResponseRedirect(client.generate_redirect_url(auth_data.state, dynamic_scopes=[required_scope]))
+
         ok, response = client.request_set_credit_score_to_post(user, score.score, auth_data, post_token)
-        print(ok, response)
         messages.success(self.request, "Your credit score has been added.")
         return HttpResponseRedirect(reverse("divar:actions"))
 
@@ -138,29 +139,28 @@ class ChatInitSessionView(APIView):
         if auth_token != settings.DIVAR_IDENTIFICATION_KEY:
             raise exceptions.AuthenticationFailed()
         data = request.data
-        print(data)
         serializer = InitSessionFromChatSerializer(data=data)
         if not serializer.is_valid():
-            print(serializer.errors)
             raise exceptions.ValidationError(serializer.errors)
         latitude = serializer.validated_data.get("location", {}).get("latitude", None)
         longitude = serializer.validated_data.get("location", {}).get("longitude", None)
-        chat = Chat.objects.create(
-            latitude=latitude,
-            longitude=longitude,
-            callback_url=serializer.validated_data.get("callback_url", None),
+        chat, _ = Chat.objects.get_or_create(
             post_token=serializer.validated_data.get("post_token"),
             user_id=serializer.validated_data.get("user_id", None),
             peer_id=serializer.validated_data.get("peer_id", None),
-            supplier_id=serializer.validated_data.get("supplier", {}).get("id", None),
-            demand_id=serializer.validated_data.get("demand", {}).get("id", None),
+            defaults={
+                "latitude": latitude,
+                "longitude": longitude,
+                "callback_url": serializer.validated_data.get("callback_url", None),
+                "supplier_id": serializer.validated_data.get("supplier", {}).get("id", None),
+                "demand_id": serializer.validated_data.get("demand", {}).get("id", None),
+            }
         )
         response = {
             "status": "200",
             "message": "success",
             "url": settings.SITE_URL + reverse("divar:chat-landing", args=[chat.uuid]),
         }
-        print(response)
         return Response(data=response, status=status.HTTP_200_OK)
 
 
@@ -186,13 +186,11 @@ class SendRandomMessageView(TemplateView):
         if not (auth_data := TempAuthorizationData.objects.filter(user_uuid=chat.user_id, scope__contains=scope,
                                                                   access_token__isnull=False).first()):
             auth_data = TempAuthorizationData.objects.create(user_uuid=chat.user_id)
-            print(scope)
             return HttpResponseRedirect(client.generate_redirect_url(auth_data.state, dynamic_scopes=[scope]))
 
-        print(auth_data, auth_data.scope, auth_data.access_token)
         message = "".join(random.choices(string.ascii_letters + string.digits, k=100))
+        message = "به کاربر مقابل امتیاز بدهید\n" + message
         ok, response = client.request_send_message_in_chat(auth_data, chat, message)
-        print(ok, response)
         if ok:
             ChatMessage.objects.create(
                 chat=chat,
