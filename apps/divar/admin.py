@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.divar.models import TempAuthorizationData, Chat, ChatMessage
+from apps.divar.models import TempAuthorizationData, Chat, ChatMessage, Landing
 
 
 @admin.register(TempAuthorizationData)
@@ -30,3 +30,8 @@ class ChatAdmin(admin.ModelAdmin):
 
     list_display = ["uuid", "post_token"]
     inlines = [ChatMessageInline]
+
+
+@admin.register(Landing)
+class LandingAdmin(admin.ModelAdmin):
+    pass

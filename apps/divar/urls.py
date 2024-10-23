@@ -1,7 +1,7 @@
 from django.urls import path
 
 from apps.divar.views import RedirectFromDivarView, ConnectToDivarView, DivarActionsView, AddCreditScoreView, \
-    AddCreditScoreToPostView, ChatInitSessionView, HomePageView, ChatLandingView, SendRandomMessageView
+    AddCreditScoreToPostView, ChatInitSessionView, HomePageView, ChatLandingView, SendRandomMessageView, LandingView
 
 app_name = 'divar'
 urlpatterns = [
@@ -13,4 +13,5 @@ urlpatterns = [
     path("start-chat", ChatInitSessionView.as_view(), name="chat-start"),
     path("chat-landing/<uuid>", ChatLandingView.as_view(), name="chat-landing"),
     path("send-random-message/<chat_uuid>", SendRandomMessageView.as_view(), name="send-random-message"),
+    path("landing/<uuid>", LandingView.as_view(), name="landing"),
 ]

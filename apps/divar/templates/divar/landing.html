@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Landing</title>
+</head>
+<body>
+    Landing
+    <p>Return URL: {{ landing.return_url }}</p>
+    <p>Source: {{ landing.source }}</p>
+    <p>Post Token: {{ landing.post_token }}</p>
+    <p>User Side: {{ landing.user_side }}</p>
+    <p>Conversation ID: {{ landing.conversation_id }}</p>
+    <p>Extra Data: {{ landing.extra_data }}</p>
+
+    <p><a href="{{ landing.return_url }}"> Back To Divar</a></p>
+</body>
+</html>

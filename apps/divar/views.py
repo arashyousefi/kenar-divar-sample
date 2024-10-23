@@ -2,6 +2,7 @@ import random
 import string
 import uuid
 from base64 import b64encode
+from datetime import datetime
 
 from django.conf import settings
 from django.contrib import messages
@@ -11,13 +12,14 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic import TemplateView, RedirectView, FormView, DetailView
 from rest_framework import exceptions, status
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.divar.client import DivarClient
 from apps.divar.forms import AddCreditScoreForm
-from apps.divar.models import TempAuthorizationData, Chat, ChatMessage
-from apps.divar.serializers import InitSessionFromChatSerializer
+from apps.divar.models import TempAuthorizationData, Chat, ChatMessage, Landing
+from apps.divar.serializers import InitSessionFromChatSerializer, InitSessionV2Serializer
 from apps.logic.models import CreditScore
 
 
@@ -128,16 +130,22 @@ class AddCreditScoreToPostView(LoginRequiredMixin, FormView):
             auth_data = TempAuthorizationData.objects.create(user=user)
             return HttpResponseRedirect(client.generate_redirect_url(auth_data.state, dynamic_scopes=[required_scope]))
 
-        ok, response = client.request_set_credit_score_to_post(user, score.score, auth_data, post_token)
-        messages.success(self.request, "Your credit score has been added.")
+        ok, response = client.request_set_credit_score_to_post_v2(user, score.score, auth_data, post_token)
+        if ok:
+            messages.success(self.request, "Your credit score has been added.")
         return HttpResponseRedirect(reverse("divar:actions"))
 
 
 class ChatInitSessionView(APIView):
+
     def post(self, request, *args, **kwargs):
         auth_token = self.request.headers['Authorization']
         if auth_token != settings.DIVAR_IDENTIFICATION_KEY:
             raise exceptions.AuthenticationFailed()
+
+        version = request.META.get("HTTP_API_VERSION", None)
+        if version == "2":
+            return self._handle_v2(request, *args, **kwargs)
         data = request.data
         serializer = InitSessionFromChatSerializer(data=data)
         if not serializer.is_valid():
@@ -160,6 +168,16 @@ class ChatInitSessionView(APIView):
             "status": "200",
             "message": "success",
             "url": settings.SITE_URL + reverse("divar:chat-landing", args=[chat.uuid]),
+        }
+        return Response(data=response, status=status.HTTP_200_OK)
+
+    def _handle_v2(self, request, *args, **kwargs):
+        serializer = InitSessionV2Serializer(data=request.data)
+        if not serializer.is_valid():
+            raise exceptions.ValidationError(serializer.errors)
+        landing = serializer.save()
+        response = {
+            "url": settings.SITE_URL + reverse("divar:landing", args=[landing.uuid]),
         }
         return Response(data=response, status=status.HTTP_200_OK)
 
@@ -197,3 +215,13 @@ class SendRandomMessageView(TemplateView):
                 message_text=message,
             )
         return HttpResponseRedirect(reverse("divar:chat-landing", args=[chat.uuid]))
+
+
+class LandingView(TemplateView):
+    template_name = "divar/landing.html"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        uid = kwargs["uuid"]
+        landing = get_object_or_404(Landing, uuid=uid)
+        context["landing"] = landing
+        return context

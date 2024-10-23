@@ -14,7 +14,8 @@ class DivarClient:
         "&scope={scopes}"
         "&state={state}"
     )
-    SCOPES = "USER_POSTS_GET USER_POSTS_GET USER_ADDON_CREATE USER_POSTS_ADDON_CREATE"
+    SCOPES = "USER_POSTS_GET USER_POSTS_GET USER_ADDON_CREATE USER_POSTS_ADDON_CREATE" \
+        " CONVERSATION_SEND_MESSAGE.9c19c900-cc81-4ef5-a627-e51e87a1dab6"
 
     def __init__(self):
         pass
@@ -56,6 +57,7 @@ class DivarClient:
         headers = {
             "x-api-key": settings.DIVAR_API_KEY,
             "x-access-token": auth_data.access_token,
+            # "x-debug-token": settings.DIVAR_DEBUG_TOKEN,
         }
 
         data = {
@@ -111,6 +113,7 @@ class DivarClient:
         headers = {
             "x-api-key": settings.DIVAR_API_KEY,
             "x-access-token": auth_data.access_token,
+            # "x-debug-token": settings.DIVAR_DEBUG_TOKEN,
         }
 
         data = {
@@ -128,7 +131,7 @@ class DivarClient:
                                 "icon_name": "HISTORY",
                                 "icon_color": "SUCCESS_PRIMARY"
                             },
-                            # "action": {
+                            # "action": {q
                             # "type": "LOAD_WEB_VIEW_PAGE",
                             # "fallback_link": "https://google.com/",
                             # "payload": {
@@ -155,6 +158,70 @@ class DivarClient:
         }
 
         response = requests.post(url, headers=headers, json=data, timeout=5)
+        print(response.status_code, response.json())
+        if response.status_code != 200:
+            ok = False
+        else:
+            ok = True
+        return ok, response.json()
+
+    def request_set_credit_score_to_post_v2(self, user, score: int, auth_data, post_token: str):
+        url = f"{settings.DIVAR_BASE_URL}/v2/open-platform/addons/post/{post_token}"
+        headers = {
+            "x-api-key": settings.DIVAR_API_KEY,
+            "x-access-token": auth_data.access_token,
+            # "x-debug-token": settings.DIVAR_DEBUG_TOKEN,
+        }
+
+        data = {
+            "widgets": [
+                {
+                    "evaluation_row": {
+                        "left": {
+                            "text": "cheap",
+                            "section_color": "SUCESS_PRIMARY"
+                        },
+                        "middle": {
+                            "text": "fair",
+                            "section_color": "WARNING_SECONDARY"
+                        },
+                        "right": {
+                            "text": "expensive",
+                            "section_color": "ERROR_PRIMARY"
+                        },
+                        "indicator_text": "evaluation",
+                        "indicator_percentage": 50,
+                        "icon_name": "WC"
+                    }
+                },
+                {
+                    "button_bar": {
+                        "title": "server link",
+                        "action": {
+                            "open_server_link": {
+                                "data": {
+                                    "foo": "bar",
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "button_bar": {
+                        "title": "direct link",
+                        "action": {
+                            "open_direct_link": "https://star-bunny-formally.ngrok-free.app",
+                        }
+                    }
+                },
+            ],
+            "notes": "test note",
+            "semantic": {
+            },
+        }
+
+        response = requests.post(url, headers=headers, json=data, timeout=5)
+        print(response.status_code, response.json())
         if response.status_code != 200:
             ok = False
         else:
@@ -201,6 +268,90 @@ class DivarClient:
         }
         response = requests.post(url, headers=headers, json=data, timeout=5)
         if response.status_code != 200:
+            ok = False
+        else:
+            ok = True
+        return ok, response.json()
+
+    def request_conversation_send_message(self, conversation_id: str, message: str, token: str):
+        url = f"{settings.DIVAR_BASE_URL}/v2/open-platform/conversations/{conversation_id}/messages"
+        headers = {
+            "x-api-key": settings.DIVAR_API_KEY,
+            "x-access-token": token,
+            # "x-debug-token": settings.DIVAR_DEBUG_TOKEN,
+        }
+
+        data = {
+            "message": message,
+            "type": "TEXT",
+            "receiver_buttons": {
+                "rows": [
+                    {
+                        "buttons": [
+                            {
+                                "action": {
+                                    "open_direct_link": "https://star-bunny-formally.ngrok-free.app/foo/bar/receiver",
+                                },
+                                "caption": "receiver direct",
+                            },
+                            {
+                                "action": {
+                                    "open_server_link": {
+                                        "data": {
+                                            "receiver": "true",
+                                            "baz": "tux",
+                                        }
+                                    },
+                                },
+                                "icon_name": "TOC",
+                                "caption": "receiver server",
+                            }
+
+                        ]
+                    }
+                ]
+            },
+            "sender_buttons": {
+                "rows": [
+                    {
+                        "buttons": [
+                            {
+                                "action": {
+                                    "open_direct_link": "https://star-bunny-formally.ngrok-free.app/foo/bar/sender",
+                                },
+                                "caption": "sender direct",
+                            },
+                            {
+                                "action": {
+                                    "open_server_link": {
+                                        "data": {
+                                            "receiver": "false",
+                                            "baz": "tux",
+                                        }
+                                    },
+                                },
+                                "icon_name": "TOC",
+                                "caption": "sender server",
+                            }
+
+                        ]
+                    },
+                    {
+                        "buttons": [
+                            {
+                                "action": {
+                                    "open_direct_link": "https://star-bunny-formally.ngrok-free.app/foo/bar/sender",
+                                },
+                                "caption": "big sender button",
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        response = requests.post(url, headers=headers, json=data, timeout=5)
+        if response.status_code != 200:
+            print(response.status_code)
             ok = False
         else:
             ok = True

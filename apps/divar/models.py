@@ -40,3 +40,13 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+
+
+class Landing(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True)
+    return_url = models.CharField(max_length=200)
+    source = models.CharField(max_length=50)
+    post_token = models.CharField(max_length=30, null=True, blank=True)
+    user_side = models.CharField(max_length=50, null=True, blank=True)
+    conversation_id = models.CharField(max_length=50, null=True, blank=True)
+    extra_data = models.JSONField(null=True, blank=True)

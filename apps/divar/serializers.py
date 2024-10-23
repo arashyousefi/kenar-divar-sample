@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
+from apps.divar.models import Landing
+
+
 class LocationSerializer(serializers.Serializer):
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6)
@@ -19,3 +22,8 @@ class InitSessionFromChatSerializer(serializers.Serializer):
     peer_id = serializers.CharField()
     supplier = DivarUserSerializer()
     demand = DivarUserSerializer()
+
+class InitSessionV2Serializer(serializers.ModelSerializer):
+    class Meta:
+        model = Landing
+        fields = ("return_url", "source", "post_token", "conversation_id", "user_side", "extra_data")
